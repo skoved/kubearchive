@@ -1,0 +1,14 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: will-pass
+  namespace: demo1
+spec:
+  template:
+    spec:
+      containers:
+      - name: will-pass
+        image: fedora
+        command: ["echo", "this is a test"]
+      restartPolicy: Never

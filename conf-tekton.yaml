@@ -1,0 +1,40 @@
+---
+apiVersion: kubearchive.kubearchive.org/v1alpha1
+kind: KubeArchiveConfig
+metadata:
+  name: kubearchive
+  namespace: demo-tekton
+spec:
+  resources:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: demo-tekton
+  namespace: demo-tekton
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pipelineruns-reader
+rules:
+- apiGroups: ["tekton.dev"]
+  resources: ["pipelineruns"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: read-pipelineruns
+subjects:
+- kind: ServiceAccount
+  name: demo-tekton
+  namespace: demo-tekton
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: pipelineruns-reader
+  apiGroup: rbac.authorization.k8s.io
+

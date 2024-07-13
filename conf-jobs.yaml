@@ -1,0 +1,39 @@
+---
+apiVersion: kubearchive.kubearchive.org/v1alpha1
+kind: KubeArchiveConfig
+metadata:
+  name: kubearchive
+  namespace: demo-jobs
+spec:
+  resources:
+    - apiVersion: batch/v1
+      kind: Job
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: demo-jobs
+  namespace: demo-jobs
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jobs-reader
+rules:
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: read-jobs
+subjects:
+- kind: ServiceAccount
+  name: demo-jobs
+  namespace: demo-jobs
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: jobs-reader
+  apiGroup: rbac.authorization.k8s.io

@@ -21,6 +21,9 @@ func (c *Controller) GetAllResources(context *gin.Context) {
 	version := context.Param("version")
 	// FIXME - Title is deprecated and this conversion must be done in a different way
 	resource := strings.Title(context.Param("resourceType")) //nolint:staticcheck
+	if strings.ToLower(resource) == "pipelineruns" {
+		resource = "PipelineRuns"
+	}
 	resources, err := c.Database.QueryResources(context, resource[:len(resource)-1], group, version)
 
 	if err != nil {
