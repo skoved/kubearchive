@@ -3,7 +3,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: will-pass
-  namespace: demo1
+  namespace: demo-jobs
 spec:
   template:
     spec:
