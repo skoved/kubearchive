@@ -48,8 +48,8 @@ sink:
   replicas: 1
   # If true, OpenTelemetry instrumentation will be enabled for the sink
   observability: false
-  # a json path that if it returns a value, will cause the sink to delete the resource
-  deleteWhen: ".status.completionTime"
+  # the path that the sink will mount the KubeArchive ConfigMap
+  mountPath: "/data/sink-filters"
 
 operator:
   # NOTE - Helm does not resolve the `ko` path. The path needs to be set on the `helm install` command.
@@ -62,7 +62,7 @@ operator:
 database:
   # Controls if the database is deployed or not. The secret with the credentials
   # is deployed always, as the sink and the api-server need to connect somewhere.
-  # Provde the proper `url` and credentials if you provide your database
+  # Provide the proper `url` and credentials if you provide your database
   # TODO: set 'enabled' to 'false' when we start distributing the chart for production installation
   enabled: true
 
