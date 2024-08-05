@@ -1,0 +1,40 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: hello-goodbye-run-test
+  namespace: demo-tekton
+  labels:
+    archive: yes
+spec:
+  pipelineRef:
+    name: hello-goodbye
+  params:
+  - name: username
+    value: "Tekton"
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: hello-goodbye-run
+  namespace: demo-tekton
+  labels:
+    archive: yes
+spec:
+  pipelineRef:
+    name: hello-goodbye
+  params:
+  - name: username
+    value: "Tekton"
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: hello-goodbye-run-ignore
+  namespace: demo-tekton
+spec:
+  pipelineRef:
+    name: hello-goodbye
+  params:
+  - name: username
+    value: "Tekton"

@@ -1,0 +1,46 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: daily-job
+  namespace: demo-jobs
+  labels:
+    write: yes
+spec:
+  template:
+    spec:
+      containers:
+      - name: will-pass
+        image: fedora
+        command: ["echo", "this is a test"]
+      restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: another-job
+  namespace: demo-jobs
+  labels:
+    write: yes
+spec:
+  template:
+    spec:
+      containers:
+      - name: will-pass
+        image: fedora
+        command: ["echo", "this is a test"]
+      restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ignored-job
+  namespace: demo-jobs
+spec:
+  template:
+    spec:
+      containers:
+      - name: will-pass
+        image: fedora
+        command: ["echo", "this is a test"]
+      restartPolicy: Never

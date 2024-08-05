@@ -1,0 +1,13 @@
+---
+apiVersion: kubearchive.kubearchive.org/v1alpha1
+kind: KubeArchiveConfig
+metadata:
+  name: kubearchive
+  namespace: demo-tekton
+spec:
+  resources:
+    - selector:
+        apiVersion: tekton.dev/v1beta1
+        kind: PipelineRun
+      archiveWhen: has(status.startTime) && metadata.labels.archive == 'yes'
+      deleteWhen: metadata.name.endsWith("-test") && has(status.completionTime)
