@@ -5,7 +5,7 @@ metadata:
   name: daily-job
   namespace: demo-jobs
   labels:
-    write: yes
+    write: "yes"
 spec:
   template:
     spec:
@@ -21,7 +21,7 @@ metadata:
   name: another-job
   namespace: demo-jobs
   labels:
-    write: yes
+    write: "yes"
 spec:
   template:
     spec:

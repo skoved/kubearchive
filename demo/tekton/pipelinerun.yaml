@@ -5,7 +5,7 @@ metadata:
   name: hello-goodbye-run-test
   namespace: demo-tekton
   labels:
-    archive: yes
+    archive: "yes"
 spec:
   pipelineRef:
     name: hello-goodbye
@@ -19,7 +19,7 @@ metadata:
   name: hello-goodbye-run
   namespace: demo-tekton
   labels:
-    archive: yes
+    archive: "yes"
 spec:
   pipelineRef:
     name: hello-goodbye
