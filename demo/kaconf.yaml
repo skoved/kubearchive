@@ -22,5 +22,5 @@ spec:
     - selector:
         apiVersion: batch/v1
         kind: Job
-      archiveWhen: has(status.startTime) && metadata.labels.write == 'yes'
-      deleteWhen: metadata.name.startsWith("daily-") && has(status.completionTime)
+      archiveWhen: has(status.startTime)
+      deleteWhen: has(status.completionTime)
