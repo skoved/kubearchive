@@ -1,0 +1,26 @@
+---
+apiVersion: kubearchive.kubearchive.org/v1alpha1
+kind: KubeArchiveConfig
+metadata:
+  name: kubearchive
+  namespace: other-tekton
+spec:
+  resources:
+    - selector:
+        apiVersion: tekton.dev/v1beta1
+        kind: PipelineRun
+      archiveWhen: has(status.startTime)
+      deleteWhen: has(status.completionTime)
+---
+apiVersion: kubearchive.kubearchive.org/v1alpha1
+kind: KubeArchiveConfig
+metadata:
+  name: kubearchive
+  namespace: other-jobs
+spec:
+  resources:
+    - selector:
+        apiVersion: batch/v1
+        kind: Job
+      archiveWhen: has(status.startTime) && metadata.labels.write == 'yes'
+      deleteWhen: metadata.name.startsWith("daily-") && has(status.completionTime)

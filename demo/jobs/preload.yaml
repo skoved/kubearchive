@@ -1,0 +1,16 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: other-job
+  namespace: other-jobs
+  labels:
+    write: "yes"
+spec:
+  template:
+    spec:
+      containers:
+      - name: will-pass
+        image: fedora
+        command: ["echo", "this is a test"]
+      restartPolicy: Never
