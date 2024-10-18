@@ -46,6 +46,44 @@ type Database struct {
 	info DBInfoInterface
 }
 
+type dbQueryConfig interface {
+	setLimit(limit string)
+	setContinueDate(date string)
+	setContinueUUID(uuid string)
+}
+
+type DBQueryOption interface {
+	apply(config dbQueryConfig) dbQueryConfig
+
+}
+
+type dbQueryOptionFunc func(dbQueryConfig) dbQueryConfig
+
+func (fn dbQueryOptionFunc) apply(config dbQueryConfig) dbQueryConfig {
+	return fn(config)
+}
+
+func WithLimit(limit string) DBQueryOption {
+	return dbQueryOptionFunc(func(config dbQueryConfig) dbQueryConfig {
+		config.setLimit(limit)
+		return config
+	})
+}
+
+func WithContinueDate(date string) DBQueryOption {
+	return dbQueryOptionFunc(func(config dbQueryConfig) dbQueryConfig {
+		config.setContinueDate(date)
+		return config
+	})
+}
+
+func WithContinueUUID(uuid string) DBQueryOption {
+	return dbQueryOptionFunc(func(config dbQueryConfig) dbQueryConfig {
+		config.setContinueUUID(uuid)
+		return config
+	})
+}
+
 func NewDatabase() (DBInterface, error) {
 	env, err := newDatabaseEnvironment()
 	if err != nil {

@@ -17,6 +17,10 @@ type PostgreSQLDatabaseInfo struct {
 	env map[string]string
 }
 
+type postgreSQLQueryConfig struct {
+	limit, continueUUID, continueDate string
+}
+
 func (info PostgreSQLDatabaseInfo) GetDriverName() string {
 	return "postgres"
 }
