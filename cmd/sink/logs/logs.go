@@ -43,6 +43,11 @@ func getKubeArchiveLoggingConfig() (map[string]string, error) {
 	return loggingConf, nil
 }
 
+type Interface interface {
+	Urls(context.Context, *unstructured.Unstructured) ([]models.LogTuple, error)
+	GetJsonPath() string
+}
+
 type UrlBuilder struct {
 	jsonPath string
 	logMap   map[string]interface{}
