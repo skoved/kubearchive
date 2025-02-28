@@ -21,6 +21,7 @@ import (
 
 // TestDatabaseConnection verifies the database connection retries using the Sink component.
 func TestDatabaseConnection(t *testing.T) {
+	t.Parallel()
 	clientset, _, err := test.GetKubernetesClient()
 	if err != nil {
 		t.Fatal(err)

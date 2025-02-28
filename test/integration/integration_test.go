@@ -26,6 +26,7 @@ import (
 // TestKubeArchiveDeployments is redundant with the kubectl rollout status from the hack/quick-install.sh
 // ,but it serves as a valid integration test, not a dummy that is not testing anything real.
 func TestAllDeploymentsReady(t *testing.T) {
+	t.Parallel()
 	client, _, err := test.GetKubernetesClient()
 	if err != nil {
 		t.Fatal(err)
@@ -61,6 +62,7 @@ func TestAllDeploymentsReady(t *testing.T) {
 }
 
 func TestNormalOperation(t *testing.T) {
+	t.Parallel()
 	clientset, _, errClient := test.GetKubernetesClient()
 	if errClient != nil {
 		t.Fatal(errClient)
