@@ -162,6 +162,59 @@ func PortForwardApiServer(t testing.TB, clientset kubernetes.Interface) string {
 	return apiServerPort
 }
 
+// state variables for PortForwardSink
+var forwardSinkRequestsMutex sync.Mutex
+var forwardSinkRequests int = 0
+var forwardSinkChan chan struct{}
+
+const sinkPort = "8080"
+
+// Helper function to forwardSink a port in a thread safe way. Returns the port used to access the Api Server.
+func PortForwardSink(t testing.TB, clientset kubernetes.Interface) string {
+	t.Helper()
+	forwardSinkRequestsMutex.Lock()
+	defer forwardSinkRequestsMutex.Unlock()
+
+	// forwardSink the port if not already forwarded
+	if forwardSinkRequests == 0 {
+		pods, err := clientset.CoreV1().Pods("kubearchive").List(context.Background(), metav1.ListOptions{
+			LabelSelector: "app=kubearchive-sink",
+			FieldSelector: "status.phase=Running",
+		})
+		t.Logf("Pod to forward: %s", pods.Items[0].Name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var errPortForward error
+		retryErr := retry.Do(func() error {
+			forwardSinkChan, errPortForward = portForward(t, []string{fmt.Sprintf("%s:%s", sinkPort, sinkPort)}, pods.Items[0].Name, "kubearchive")
+			if errPortForward != nil {
+				return errPortForward
+			}
+			return nil
+		}, retry.Attempts(3))
+
+		if retryErr != nil {
+			t.Fatal(retryErr)
+		}
+	}
+
+	forwardSinkRequests++
+
+	t.Cleanup(func() {
+		forwardSinkRequestsMutex.Lock()
+		defer forwardSinkRequestsMutex.Unlock()
+		forwardSinkRequests--
+
+		// close the port if no longer needed
+		if forwardSinkRequests == 0 {
+			close(forwardSinkChan)
+		}
+	})
+
+	return sinkPort
+}
+
 func GetKubernetesClient(t testing.TB) (*kubernetes.Clientset, *dynamic.DynamicClient) {
 	t.Helper()
 

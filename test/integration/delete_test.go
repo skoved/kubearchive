@@ -18,12 +18,15 @@ import (
 	"github.com/kubearchive/kubearchive/test"
 )
 
-const sinkPort = "8111"
+const (
+	numEvents  = 100
+	numWorkers = 3
+)
 
-func BenchmarkDelete(b *testing.B) {
-	namespaceName, _ := test.CreateTestNamespace(b, false)
-
-	b.Log("created namespace")
+func TestDelete(t *testing.T) {
+	namespaceName, _ := test.CreateTestNamespace(t, false)
+	clientset, _ := test.GetKubernetesClient(t)
+	sinkPort := test.PortForwardSink(t, clientset)
 
 	resources := map[string]any{
 		"resources": []map[string]any{
@@ -37,11 +40,7 @@ func BenchmarkDelete(b *testing.B) {
 		},
 	}
 
-	b.Log("creating kubearchiveconfig")
-
-	test.CreateKAC(b, namespaceName, resources)
-
-	b.Log("created kubearchiveconfig")
+	test.CreateKAC(t, namespaceName, resources)
 
 	type PodData struct {
 		Kind            string
@@ -70,34 +69,33 @@ func BenchmarkDelete(b *testing.B) {
 	}
 	tmpl, err := template.New("pod.json").ParseFiles("testdata/pod.json")
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
 	var data bytes.Buffer
 	err = tmpl.Execute(&data, podData)
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
 
 	event := createEvent(data.Bytes())
 	wg := &sync.WaitGroup{}
 
-	b.Log("finished setup")
+	t.Log("finished setup")
 
-	for b.Loop() {
+	start := time.Now()
+
+	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		go sendDeleteEvents(b, wg, sinkPort, event)
-
-		wg.Add(1)
-		go sendDeleteEvents(b, wg, sinkPort, event)
-
-		wg.Add(1)
-		go sendDeleteEvents(b, wg, sinkPort, event)
-
-		wg.Wait()
-
+		go sendDeleteEvents(t, wg, sinkPort, event)
 	}
 
-	b.Cleanup(func() { time.Sleep(6 * time.Second) })
+	wg.Wait()
+
+	runTime := time.Since(start)
+	t.Logf("took %s to send (and the sink to process) %d cloud events", runTime.String(), numEvents*numWorkers)
+
+	// wait the delay time so the sink executes all of the delete requests
+	t.Cleanup(func() { time.Sleep(6 * time.Second) })
 }
 
 func createEvent(data []byte) cloudevents.Event {
@@ -109,10 +107,7 @@ func createEvent(data []byte) cloudevents.Event {
 	return event
 }
 
-const numEvents = 100
-
 func sendDeleteEvents(t testing.TB, wg *sync.WaitGroup, sinkPort string, event cloudevents.Event) {
-	t.Log("sending cloudevents")
 	p, err := cloudevents.NewHTTP()
 	if err != nil {
 		t.Fatal(err)
@@ -125,7 +120,6 @@ func sendDeleteEvents(t testing.TB, wg *sync.WaitGroup, sinkPort string, event c
 	ctx := cloudevents.ContextWithTarget(context.Background(), url)
 
 	for i := 0; i < numEvents; i++ {
-		t.Log("sending event", i)
 		if result := client.Send(ctx, event); !cloudevents.IsACK(result) {
 			wg.Done()
 			t.Fatalf("failed to send event: %v", result)
