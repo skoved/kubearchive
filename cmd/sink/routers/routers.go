@@ -209,48 +209,60 @@ func (c *Controller) receiveCloudEvent(ctx context.Context, event cloudevents.Ev
 	kind := k8sObj.GetObjectKind().GroupVersionKind()
 	resource, _ := meta.UnsafeGuessKindToResource(kind)     // we only need the plural resource
 	propagationPolicy := metav1.DeletePropagationBackground // can't get address of a const
-	k8sCtx, k8sCancel := context.WithTimeout(ctx, time.Second*5)
-	defer k8sCancel()
-	err = c.K8sClient.Resource(resource).Namespace(k8sObj.GetNamespace()).Delete(
-		k8sCtx,
-		k8sObj.GetName(),
-		metav1.DeleteOptions{PropagationPolicy: &propagationPolicy},
-	)
-	if errs.IsNotFound(err) {
-		slog.Info(
-			"Resource is already deleted",
-			"event-id", event.ID(),
-			"event-type", event.Type(),
-			"id", k8sObj.GetUID(),
-			"kind", k8sObj.GetKind(),
-			"namespace", k8sObj.GetNamespace(),
-			"name", k8sObj.GetName(),
+	deleteFunc := func() {
+		k8sCtx, k8sCancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer k8sCancel()
+		err = c.K8sClient.Resource(resource).Namespace(k8sObj.GetNamespace()).Delete(
+			k8sCtx,
+			k8sObj.GetName(),
+			metav1.DeleteOptions{PropagationPolicy: &propagationPolicy},
 		)
-		return NewCEResult(http.StatusAccepted)
-	}
-	if err != nil {
-		slog.Error(
-			"Error deleting a resource",
-			"event-id", event.ID(),
-			"event-type", event.Type(),
-			"id", k8sObj.GetUID(),
-			"kind", k8sObj.GetKind(),
-			"namespace", k8sObj.GetNamespace(),
-			"name", k8sObj.GetName(),
-			"err", err,
-		)
-		return NewCEResult(http.StatusInternalServerError)
+		if errs.IsNotFound(err) {
+			slog.Info(
+				"Resource is already deleted",
+				"event-id", event.ID(),
+				"event-type", event.Type(),
+				"id", k8sObj.GetUID(),
+				"kind", k8sObj.GetKind(),
+				"namespace", k8sObj.GetNamespace(),
+				"name", k8sObj.GetName(),
+			)
+			return
+		}
+		if err != nil {
+			slog.Error(
+				"Error deleting a resource",
+				"event-id", event.ID(),
+				"event-type", event.Type(),
+				"id", k8sObj.GetUID(),
+				"kind", k8sObj.GetKind(),
+				"namespace", k8sObj.GetNamespace(),
+				"name", k8sObj.GetName(),
+				"err", err,
+			)
+			return
+		}
+
+		deleteTs := metav1.Now()
+		k8sObj.SetDeletionTimestamp(&deleteTs)
+		err = c.writeResource(k8sCtx, k8sObj, event)
+		if err != nil {
+			slog.Error(
+				"Could not update object after deletion",
+				"event-id", event.ID(),
+				"event-type", event.Type(),
+				"id", k8sObj.GetUID(),
+				"kind", k8sObj.GetKind(),
+				"namespace", k8sObj.GetNamespace(),
+				"name", k8sObj.GetName(),
+			)
+		}
 	}
 
-	deleteTs := metav1.Now()
-	k8sObj.SetDeletionTimestamp(&deleteTs)
-	err = c.writeResource(ctx, k8sObj, event)
-	if err != nil {
-		return NewCEResult(http.StatusInternalServerError)
-	}
+	time.AfterFunc(5*time.Second, deleteFunc)
 
 	slog.Info(
-		"Resource was updated, archived and deleted from the cluster",
+		"Resource was updated, archived and queued for deletion from the cluster",
 		"event-id", event.ID(),
 		"event-type", event.Type(),
 		"id", k8sObj.GetUID(),
